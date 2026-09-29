@@ -13,6 +13,7 @@ Aplikasi manajemen catering untuk mengelola menu, pelanggan, dan pesanan dalam s
 - [Menjalankan Aplikasi](#menjalankan-aplikasi)
 - [Script yang Tersedia](#script-yang-tersedia)
 - [Fitur](#fitur)
+- [Panduan Git](#panduan-git)
 - [Kontribusi](#kontribusi)
 - [Lisensi](#lisensi)
 
@@ -113,6 +114,7 @@ Cek versi:
 node -v
 pnpm -v
 psql --version
+git --version
 ```
 
 ## Instalasi
@@ -153,7 +155,7 @@ DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/catering?schema=public"
 
 Ganti `USER`, `PASSWORD`, dan nama database sesuai PostgreSQL kamu. Jika password mengandung karakter khusus (`@`, `#`, `/`), lakukan URL-encode (misalnya `@` menjadi `%40`).
 
-> File `.env` tidak boleh ikut ter-commit. Pastikan sudah masuk `.gitignore`.
+> File `.env` tidak boleh ikut ter-commit. Pastikan sudah masuk `.gitignore`. Yang di-commit hanya `.env.example` (isi kerangkanya saja, tanpa password asli).
 
 ## Setup Database
 
@@ -232,13 +234,205 @@ Daftar fitur yang direncanakan (sesuaikan dengan progres project):
 - [ ] Perhitungan total harga dan riwayat transaksi
 - [ ] Autentikasi dan hak akses admin
 
+## Panduan Git
+
+### 1. Setup awal (sekali saja per komputer)
+
+```bash
+git config --global user.name "Nama Kamu"
+git config --global user.email "email@kamu.com"
+git config --global init.defaultBranch main
+```
+
+### 2. Menyiapkan `.gitignore`
+
+Pastikan `.gitignore` di root minimal berisi:
+
+```gitignore
+# dependency
+node_modules/
+
+# environment (jangan pernah di-commit)
+.env
+.env.*
+!.env.example
+
+# build output
+dist/
+build/
+.turbo/
+
+# database lokal & log
+*.db
+*.log
+
+# editor & OS
+.vscode/
+.DS_Store
+Thumbs.db
+```
+
+> `pnpm-lock.yaml` **harus** ikut di-commit agar semua orang memakai versi dependency yang sama.
+
+### 3. Menghubungkan project ke GitHub (pertama kali)
+
+1. Buat repository kosong di GitHub (tanpa README, tanpa .gitignore).
+2. Jalankan dari root project:
+
+   ```bash
+   git init
+   git add .
+   git commit -m "chore: initial commit"
+   git branch -M main
+   git remote add origin https://github.com/USERNAME/NAMA-REPO.git
+   git push -u origin main
+   ```
+
+3. Cek koneksi remote:
+
+   ```bash
+   git remote -v
+   ```
+
+### 4. Struktur branch
+
+| Branch      | Fungsi                                               |
+| ----------- | ---------------------------------------------------- |
+| `main`      | Kode stabil, siap dipakai. Jangan kerja langsung di sini. |
+| `develop`   | (opsional) Tempat menggabungkan fitur sebelum rilis. |
+| `fitur/*`   | Pengembangan fitur baru, contoh: `fitur/manajemen-menu` |
+| `fix/*`     | Perbaikan bug, contoh: `fix/total-harga-salah`       |
+| `chore/*`   | Perawatan (dependency, konfigurasi), contoh: `chore/update-prisma` |
+
+### 5. Alur kerja harian
+
+```bash
+# 1. Ambil kode terbaru
+git checkout main
+git pull origin main
+
+# 2. Buat branch baru untuk pekerjaanmu
+git checkout -b fitur/manajemen-menu
+
+# 3. Kerjakan kodenya, lalu cek perubahan
+git status
+git diff
+
+# 4. Tambahkan dan commit (boleh berkali-kali)
+git add .
+git commit -m "feat(api): tambah endpoint daftar menu"
+
+# 5. Kirim branch ke GitHub
+git push -u origin fitur/manajemen-menu
+```
+
+Setelah itu buka GitHub dan buat **Pull Request** dari `fitur/manajemen-menu` ke `main`. Setelah di-review dan di-merge:
+
+```bash
+git checkout main
+git pull origin main
+git branch -d fitur/manajemen-menu
+```
+
+### 6. Format pesan commit
+
+Gunakan format [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+<tipe>(<area>): <deskripsi singkat>
+```
+
+| Tipe       | Kapan dipakai                              |
+| ---------- | ------------------------------------------ |
+| `feat`     | Menambah fitur baru                        |
+| `fix`      | Memperbaiki bug                            |
+| `docs`     | Mengubah dokumentasi                       |
+| `style`    | Perubahan tampilan/format, bukan logika    |
+| `refactor` | Merapikan kode tanpa mengubah perilaku     |
+| `chore`    | Konfigurasi, dependency, tugas rutin       |
+| `test`     | Menambah atau memperbaiki test             |
+
+Contoh:
+
+```bash
+git commit -m "feat(web): tambah halaman daftar pesanan"
+git commit -m "fix(database): perbaiki relasi Order dan OrderItem"
+git commit -m "docs: update panduan instalasi"
+git commit -m "chore(database): update prisma ke 6.19"
+```
+
+`area` biasanya berisi nama folder: `web`, `api`, `database`.
+
+### 7. Menyinkronkan branch dengan `main`
+
+Jika `main` sudah berubah saat kamu masih mengerjakan fitur:
+
+```bash
+git checkout fitur/manajemen-menu
+git fetch origin
+git merge origin/main
+```
+
+Jika muncul **conflict**:
+
+1. Buka file yang ditandai conflict di VS Code, pilih *Accept Current*, *Accept Incoming*, atau *Accept Both*.
+2. Hapus penanda `<<<<<<<`, `=======`, `>>>>>>>` yang tersisa.
+3. Selesaikan merge:
+
+   ```bash
+   git add .
+   git commit
+   ```
+
+### 8. Perubahan pada database (Prisma)
+
+- Selalu **commit folder `prisma/migrations/`** bersama perubahan `schema.prisma`.
+- Jangan edit atau hapus file migrasi yang sudah di-merge ke `main`. Buat migrasi baru saja.
+- Setelah `git pull`, jalankan migrasi jika ada file migrasi baru:
+
+  ```bash
+  pnpm install
+  cd packages/database
+  pnpm exec prisma migrate dev
+  ```
+
+### 9. Perintah berguna lainnya
+
+| Kebutuhan                                   | Perintah                                   |
+| ------------------------------------------- | ------------------------------------------ |
+| Lihat riwayat commit                        | `git log --oneline --graph`                |
+| Lihat semua branch                          | `git branch -a`                            |
+| Batalkan perubahan file yang belum di-add   | `git restore <file>`                       |
+| Keluarkan file dari staging                 | `git restore --staged <file>`              |
+| Ubah pesan commit terakhir (belum di-push)  | `git commit --amend -m "pesan baru"`       |
+| Simpan perubahan sementara                  | `git stash` lalu `git stash pop`           |
+| Batalkan commit yang sudah di-push (aman)   | `git revert <hash-commit>`                 |
+
+> Hindari `git push --force` di branch `main` atau branch yang dipakai bersama, karena bisa menimpa pekerjaan orang lain.
+
+### 10. Kalau tidak sengaja meng-commit `.env`
+
+Menghapus file dari commit berikutnya **tidak cukup**, karena password masih ada di riwayat. Langkah aman:
+
+1. **Ganti password/secret** yang bocor (password database, API key, dan sebagainya).
+2. Hentikan pelacakan file:
+
+   ```bash
+   git rm --cached .env
+   git commit -m "chore: hapus .env dari repository"
+   ```
+
+3. Pastikan `.env` sudah ada di `.gitignore`.
+4. Jika repository publik, bersihkan riwayat dengan `git filter-repo` atau BFG Repo-Cleaner.
+
 ## Kontribusi
 
-1. Fork repository ini
-2. Buat branch fitur: `git checkout -b fitur/nama-fitur`
-3. Commit perubahan: `git commit -m "feat: deskripsi singkat"`
-4. Push ke branch: `git push origin fitur/nama-fitur`
-5. Buat Pull Request
+Ikuti [Panduan Git](#panduan-git) di atas, dengan ringkasan:
+
+1. Buat branch dari `main`: `git checkout -b fitur/nama-fitur`
+2. Commit perubahan dengan format Conventional Commits
+3. Push branch: `git push -u origin fitur/nama-fitur`
+4. Buat Pull Request ke `main` dan tunggu review
 
 ## Lisensi
 
