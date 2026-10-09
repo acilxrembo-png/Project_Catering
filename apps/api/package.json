@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/server.js",
-    "start": "tsx src/server.js"
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts"
   },
   "dependencies": {
     "@catering/database": "workspace:*",
@@ -19,6 +19,11 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "tsx": "^4.19.0"
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^26.6.4",
+    "tsx": "^4.19.0",
+    "typescript": "^7.0.2"
   }
 }
