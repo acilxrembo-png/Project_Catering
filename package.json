@@ -1,0 +1,13 @@
+{
+  "name": "rasa_nuansa",
+  "private": true,
+  "packageManager": "pnpm@10.33.4",
+  "scripts": {
+    "dev": "pnpm --parallel --filter \"./apps/*\" dev",
+    "dev:web": "pnpm --filter web dev",
+    "dev:api": "pnpm --filter api dev",
+    "db:generate": "pnpm --filter database exec prisma generate",
+    "db:push": "pnpm --filter database exec prisma db push",
+    "db:seed": "pnpm --filter database exec prisma db seed"
+  }
+}
